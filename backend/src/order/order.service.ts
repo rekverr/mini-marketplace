@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
+import { OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class OrderService {
@@ -80,6 +81,23 @@ export class OrderService {
       where: { userId },
       include: { orderItems: true },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getAllOrders() {
+    return this.prisma.order.findMany({
+      include: {
+        orderItems: true,
+        user: { select: { email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateOrderStatus(id: string, status: OrderStatus) {
+    return this.prisma.order.update({
+      where: { id },
+      data: { status },
     });
   }
 }
