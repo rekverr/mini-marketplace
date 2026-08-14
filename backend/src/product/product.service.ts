@@ -1,20 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { PrismaService } from '../prisma/prisma.service';
 import { GetProductsDto, SortBy, SortOrder } from './dto/get-products.dto';
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
-  async create(dto: CreateProductDto) {
-    return this.prisma.product.create({
-      data: dto,
+  async create(createProductDto: CreateProductDto) {
+    const product = await this.prisma.product.create({
+      data: createProductDto,
     });
+
+    await this.clearProductCache();
+
+    return product;
   }
 
   async findAll(query: GetProductsDto) {
+    const cacheKey = `products_${JSON.stringify(query)}`;
+
+    const cachedData = await this.cacheManager.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
     const {
       search,
       categoryId,
@@ -56,7 +72,7 @@ export class ProductService {
       this.prisma.product.count({ where }),
     ]);
 
-    return {
+    const result = {
       data,
       meta: {
         total,
@@ -65,37 +81,57 @@ export class ProductService {
         totalPages: Math.ceil(total / (limit ?? 10)),
       },
     };
+
+    await this.cacheManager.set(cacheKey, result);
+
+    return result;
   }
 
-  findOne(id: string) {
-    const product = this.prisma.product.findUnique({
+  async findOne(id: string) {
+    const product = await this.prisma.product.findUnique({
       where: { id },
-      include: {
-        category: true,
-      },
+      include: { category: true },
     });
 
     if (!product) {
-      throw new NotFoundException(`Товар з ID ${id} не знайдено`);
+      throw new NotFoundException();
     }
 
     return product;
   }
 
-  async update(id: string, dto: UpdateProductDto) {
-    await this.findOne(id);
-
-    return this.prisma.product.update({
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    const product = await this.prisma.product.update({
       where: { id },
-      data: dto,
+      data: updateProductDto,
     });
+
+    await this.clearProductCache();
+
+    return product;
   }
 
   async remove(id: string) {
-    await this.findOne(id);
-
-    return this.prisma.product.delete({
+    const product = await this.prisma.product.delete({
       where: { id },
     });
+
+    await this.clearProductCache();
+
+    return product;
+  }
+
+  private async clearProductCache() {
+    const store =
+      (this.cacheManager as any).store ??
+      (this.cacheManager as any).stores?.[0];
+    const client = store?.client ?? (this.cacheManager as any).client;
+
+    if (client) {
+      const keys = await client.keys('products_*');
+      if (keys && keys.length > 0) {
+        await client.del(keys);
+      }
+    }
   }
 }
