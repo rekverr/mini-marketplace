@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
 import { BullModule } from '@nestjs/bullmq';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { BullModule } from '@nestjs/bullmq';
     AuthModule,
     CartModule,
     OrderModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
