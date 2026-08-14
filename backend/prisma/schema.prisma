@@ -30,6 +30,18 @@ model User {
 
   cart Cart?
   orders Order[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id String @id @default(uuid())
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  userId String
 }
 
 model Category {
@@ -101,7 +113,7 @@ model OrderItem {
   productNameSnapshot String
   unitPrice Decimal
   quantity Int
-  
+
   order Order @relation(fields: [orderId], references: [id])
   orderId String
 
