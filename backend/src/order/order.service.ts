@@ -1,9 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectQueue('orders') private readonly ordersQueue: Queue,
+  ) {}
 
   async checkout(userId: string) {
     const cart = await this.prisma.cart.findUnique({
@@ -15,7 +20,7 @@ export class OrderService {
       throw new BadRequestException();
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const order = await this.prisma.$transaction(async (tx) => {
       let totalAmount = 0;
       const orderItemsData = [];
 
@@ -44,7 +49,7 @@ export class OrderService {
         });
       }
 
-      const order = await tx.order.create({
+      const createdOrder = await tx.order.create({
         data: {
           userId,
           totalAmount,
@@ -62,8 +67,12 @@ export class OrderService {
         where: { cartId: cart.id },
       });
 
-      return order;
+      return createdOrder;
     });
+
+    await this.ordersQueue.add('process-order', { orderId: order.id });
+
+    return order;
   }
 
   async getUserOrders(userId: string) {
