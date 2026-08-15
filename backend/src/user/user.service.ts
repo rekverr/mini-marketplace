@@ -12,6 +12,12 @@ import * as bcrypt from 'bcrypt';
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private withoutPassword<T extends { passwordHash: string }>(user: T) {
+    const { passwordHash, ...result } = user;
+    void passwordHash;
+    return result;
+  }
+
   async create(createUserDto: CreateUserDto) {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
@@ -31,16 +37,12 @@ export class UserService {
       },
     });
 
-    const { passwordHash: _, ...result } = user;
-    return result;
+    return this.withoutPassword(user);
   }
 
   async findAll() {
     const users = await this.prisma.user.findMany();
-    return users.map((user) => {
-      const { passwordHash, ...result } = user;
-      return result;
-    });
+    return users.map((user) => this.withoutPassword(user));
   }
 
   async findOne(id: string) {
@@ -52,8 +54,7 @@ export class UserService {
       throw new NotFoundException();
     }
 
-    const { passwordHash, ...result } = user;
-    return result;
+    return this.withoutPassword(user);
   }
 
   async findByEmail(email: string) {
@@ -68,8 +69,7 @@ export class UserService {
       where: { id },
       data: updateUserDto,
     });
-    const { passwordHash, ...result } = updatedUser;
-    return result;
+    return this.withoutPassword(updatedUser);
   }
 
   async remove(id: string) {
@@ -77,7 +77,6 @@ export class UserService {
     const deletedUser = await this.prisma.user.delete({
       where: { id },
     });
-    const { passwordHash, ...result } = deletedUser;
-    return result;
+    return this.withoutPassword(deletedUser);
   }
 }

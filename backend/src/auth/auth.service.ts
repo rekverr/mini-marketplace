@@ -5,6 +5,8 @@ import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { CreateUserDto } from '../user/dto/create-user.dto';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +15,13 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
   ) {}
+
+  async register(createUserDto: CreateUserDto) {
+    return this.userService.create({
+      ...createUserDto,
+      role: Role.CUSTOMER,
+    });
+  }
 
   async login(loginDto: LoginDto) {
     const user = await this.userService.findByEmail(loginDto.email);
