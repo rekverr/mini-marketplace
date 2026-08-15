@@ -1,13 +1,14 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { PrismaService } from '../prisma/prisma.service';
 import { Logger } from '@nestjs/common';
+import { OrderStatus } from '@prisma/client';
+import { OrderService } from './order.service';
 
 @Processor('orders')
 export class OrderProcessor extends WorkerHost {
   private readonly logger = new Logger(OrderProcessor.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(private readonly orderService: OrderService) {
     super();
   }
 
@@ -15,17 +16,12 @@ export class OrderProcessor extends WorkerHost {
     const { orderId } = job.data;
     this.logger.log(`Processing order ${orderId}...`);
 
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: { status: 'PROCESSING' },
-    });
+    await this.orderService.updateOrderStatus(orderId, OrderStatus.PROCESSING);
 
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: { status: 'COMPLETED' },
-    });
+    await this.orderService.updateOrderStatus(orderId, OrderStatus.SHIPPED);
+    await this.orderService.updateOrderStatus(orderId, OrderStatus.COMPLETED);
 
     this.logger.log(`Order ${orderId} successfully COMPLETED.`);
   }

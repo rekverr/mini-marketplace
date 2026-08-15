@@ -14,6 +14,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
 
 @UseGuards(JwtAuthGuard)
 @Controller('orders')
@@ -21,12 +22,12 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post('checkout')
-  checkout(@Request() req: any) {
+  checkout(@Request() req: AuthenticatedRequest) {
     return this.orderService.checkout(req.user.id);
   }
 
   @Get('me')
-  getUserOrders(@Request() req: any) {
+  getUserOrders(@Request() req: AuthenticatedRequest) {
     return this.orderService.getUserOrders(req.user.id);
   }
 

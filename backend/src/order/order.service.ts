@@ -1,11 +1,26 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+  private readonly statusTransitions: Record<OrderStatus, OrderStatus[]> = {
+    [OrderStatus.NEW]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+    [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+    [OrderStatus.SHIPPED]: [OrderStatus.COMPLETED],
+    [OrderStatus.COMPLETED]: [],
+    [OrderStatus.CANCELLED]: [],
+  };
+
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('orders') private readonly ordersQueue: Queue,
@@ -22,28 +37,42 @@ export class OrderService {
     }
 
     const order = await this.prisma.$transaction(async (tx) => {
-      let totalAmount = 0;
-      const orderItemsData = [];
+      let totalAmount = new Prisma.Decimal(0);
+      const orderItemsData: Prisma.OrderItemCreateWithoutOrderInput[] = [];
 
       for (const item of cart.items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
         });
 
-        if (!product || product.stockQuantity < item.quantity) {
-          throw new BadRequestException();
+        if (!product) {
+          throw new BadRequestException('Product is no longer available');
         }
 
-        await tx.product.update({
-          where: { id: product.id },
-          data: { stockQuantity: product.stockQuantity - item.quantity },
+        const decrement = await tx.product.updateMany({
+          where: {
+            id: product.id,
+            stockQuantity: { gte: item.quantity },
+          },
+          data: {
+            stockQuantity: {
+              decrement: item.quantity,
+            },
+          },
         });
 
-        const itemTotal = Number(product.price) * item.quantity;
-        totalAmount += itemTotal;
+        if (decrement.count !== 1) {
+          this.logger.warn(
+            `INVENTORY_DECREMENT_REJECTED productId=${product.id} userId=${userId}`,
+          );
+          throw new ConflictException('Insufficient stock');
+        }
+
+        const itemTotal = product.price.mul(item.quantity);
+        totalAmount = totalAmount.plus(itemTotal);
 
         orderItemsData.push({
-          productId: product.id,
+          product: { connect: { id: product.id } },
           quantity: item.quantity,
           unitPrice: product.price,
           productNameSnapshot: product.name,
@@ -72,6 +101,7 @@ export class OrderService {
     });
 
     await this.ordersQueue.add('process-order', { orderId: order.id });
+    this.logger.log(`ORDER_CREATED orderId=${order.id} userId=${userId}`);
 
     return order;
   }
@@ -95,9 +125,29 @@ export class OrderService {
   }
 
   async updateOrderStatus(id: string, status: OrderStatus) {
-    return this.prisma.order.update({
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+    });
+
+    if (!order) {
+      throw new NotFoundException();
+    }
+
+    if (!this.statusTransitions[order.status].includes(status)) {
+      throw new ConflictException(
+        `Invalid order status transition: ${order.status} -> ${status}`,
+      );
+    }
+
+    const updatedOrder = await this.prisma.order.update({
       where: { id },
       data: { status },
     });
+
+    this.logger.log(
+      `ORDER_STATUS_CHANGED orderId=${id} from=${order.status} to=${status}`,
+    );
+
+    return updatedOrder;
   }
 }
