@@ -12,9 +12,17 @@ import { BullModule } from '@nestjs/bullmq';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: async () => ({
@@ -43,6 +51,12 @@ import { redisStore } from 'cache-manager-redis-yet';
     AnalyticsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

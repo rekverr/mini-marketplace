@@ -65,16 +65,27 @@ export class AnalyticsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    let csv = 'Order ID,Date,User Email,Status,Total Amount,Items\n';
+    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
-    orders.forEach((order) => {
+    const rows: string[][] = [
+      ['Order ID', 'Date', 'User Email', 'Status', 'Total Amount', 'Items'],
+    ];
+
+    for (const order of orders) {
       const itemsStr = order.orderItems
         .map((i) => `${i.productNameSnapshot} (x${i.quantity})`)
         .join('; ');
 
-      csv += `${order.id},${order.createdAt.toISOString()},${order.user.email},${order.status},${order.totalAmount},"${itemsStr}"\n`;
-    });
+      rows.push([
+        order.id,
+        order.createdAt.toISOString(),
+        order.user.email,
+        order.status,
+        order.totalAmount.toString(),
+        itemsStr,
+      ]);
+    }
 
-    return csv;
+    return rows.map((row) => row.map(escapeCsv).join(',')).join('\n') + '\n';
   }
 }
