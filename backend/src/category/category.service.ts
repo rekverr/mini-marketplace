@@ -1,16 +1,24 @@
-import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProductService } from '../product/product.service';
 
 @Injectable()
 export class CategoryService {
-  constructor(private readonly prisma: PrismaService) {}
-  
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly productService: ProductService,
+  ) {}
+
   async create(dto: CreateCategoryDto) {
-    return this.prisma.category.create({
+    const category = await this.prisma.category.create({
       data: dto,
     });
+
+    await this.productService.invalidateCatalogCache();
+
+    return category;
   }
 
   async findAll() {
@@ -32,17 +40,25 @@ export class CategoryService {
   async update(id: string, dto: UpdateCategoryDto) {
     await this.findOne(id);
 
-    return this.prisma.category.update({
+    const category = await this.prisma.category.update({
       where: { id },
       data: dto,
     });
+
+    await this.productService.invalidateCatalogCache();
+
+    return category;
   }
 
   async remove(id: string) {
     await this.findOne(id);
 
-    return this.prisma.category.delete({
+    const category = await this.prisma.category.delete({
       where: { id },
     });
+
+    await this.productService.invalidateCatalogCache();
+
+    return category;
   }
 }

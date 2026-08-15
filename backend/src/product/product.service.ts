@@ -1,10 +1,22 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { GetProductsDto, SortBy, SortOrder } from './dto/get-products.dto';
+
+type RedisCacheClient = {
+  keys(pattern: string): Promise<string[]>;
+  del(...keys: string[]): Promise<number>;
+};
+
+type CacheWithRedisClient = Cache & {
+  store?: { client?: RedisCacheClient };
+  stores?: Array<{ client?: RedisCacheClient }>;
+  client?: RedisCacheClient;
+};
 
 @Injectable()
 export class ProductService {
@@ -18,13 +30,13 @@ export class ProductService {
       data: createProductDto,
     });
 
-    await this.clearProductCache();
+    await this.invalidateCatalogCache();
 
     return product;
   }
 
   async findAll(query: GetProductsDto) {
-    const cacheKey = `products_${JSON.stringify(query)}`;
+    const cacheKey = `products:list:${JSON.stringify(query)}`;
 
     const cachedData = await this.cacheManager.get(cacheKey);
     if (cachedData) {
@@ -43,7 +55,7 @@ export class ProductService {
     } = query;
     const skip = ((page ?? 1) - 1) * (limit ?? 10);
 
-    const where: any = {};
+    const where: Prisma.ProductWhereInput = {};
 
     if (search) {
       where.name = { contains: search, mode: 'insensitive' };
@@ -57,9 +69,11 @@ export class ProductService {
       if (maxPrice !== undefined) where.price.lte = maxPrice;
     }
 
-    const orderBy = {
-      [sortBy ?? SortBy.NEWEST]: sortOrder ?? SortOrder.DESC,
-    };
+    const orderDirection = sortOrder ?? SortOrder.DESC;
+    const orderBy: Prisma.ProductOrderByWithRelationInput[] =
+      (sortBy ?? SortBy.NEWEST) === SortBy.PRICE
+        ? [{ price: orderDirection }, { id: 'asc' }]
+        : [{ createdAt: orderDirection }, { id: 'asc' }];
 
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
@@ -88,6 +102,12 @@ export class ProductService {
   }
 
   async findOne(id: string) {
+    const cacheKey = `products:item:${id}`;
+    const cachedData = await this.cacheManager.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: { category: true },
@@ -96,6 +116,8 @@ export class ProductService {
     if (!product) {
       throw new NotFoundException();
     }
+
+    await this.cacheManager.set(cacheKey, product);
 
     return product;
   }
@@ -106,7 +128,7 @@ export class ProductService {
       data: updateProductDto,
     });
 
-    await this.clearProductCache();
+    await this.invalidateCatalogCache(id);
 
     return product;
   }
@@ -116,21 +138,23 @@ export class ProductService {
       where: { id },
     });
 
-    await this.clearProductCache();
+    await this.invalidateCatalogCache(id);
 
     return product;
   }
 
-  private async clearProductCache() {
-    const store =
-      (this.cacheManager as any).store ??
-      (this.cacheManager as any).stores?.[0];
-    const client = store?.client ?? (this.cacheManager as any).client;
+  async invalidateCatalogCache(productId?: string) {
+    const cacheWithClient = this.cacheManager as CacheWithRedisClient;
+    const store = cacheWithClient.store ?? cacheWithClient.stores?.[0];
+    const client = store?.client ?? cacheWithClient.client;
 
     if (client) {
-      const keys = await client.keys('products_*');
+      const keys = await client.keys('products:list:*');
       if (keys && keys.length > 0) {
-        await client.del(keys);
+        await client.del(...keys);
+      }
+      if (productId) {
+        await client.del(`products:item:${productId}`);
       }
     }
   }
