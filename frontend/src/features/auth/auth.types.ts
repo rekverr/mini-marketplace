@@ -15,3 +15,5 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
 }
+
+export type AuthCredentials = Record<string, string>;
