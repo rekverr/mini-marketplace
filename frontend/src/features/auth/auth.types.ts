@@ -8,6 +8,8 @@ export interface AuthState {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  isHydrating: boolean;
+  hydrated: boolean;
 }
 
 export interface LoginResponse {
@@ -16,4 +18,9 @@ export interface LoginResponse {
   refreshToken: string;
 }
 
-export type AuthCredentials = Record<string, string>;
+export interface AuthCredentials {
+  email: string;
+  password: string;
+}
+
+export type AuthSessionResponse = LoginResponse;

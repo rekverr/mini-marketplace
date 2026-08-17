@@ -52,19 +52,21 @@ export class CartService {
     });
 
     if (existingItem) {
-      return this.prisma.cartItem.update({
+      await this.prisma.cartItem.update({
         where: { id: existingItem.id },
         data: { quantity: existingItem.quantity + dto.quantity },
       });
+    } else {
+      await this.prisma.cartItem.create({
+        data: {
+          cartId: cart.id,
+          productId: dto.productId,
+          quantity: dto.quantity,
+        },
+      });
     }
 
-    return this.prisma.cartItem.create({
-      data: {
-        cartId: cart.id,
-        productId: dto.productId,
-        quantity: dto.quantity,
-      },
-    });
+    return this.getCart(userId);
   }
 
   async updateItem(userId: string, productId: string, dto: UpdateCartItemDto) {
@@ -83,10 +85,12 @@ export class CartService {
       throw new NotFoundException();
     }
 
-    return this.prisma.cartItem.update({
+    await this.prisma.cartItem.update({
       where: { id: existingItem.id },
       data: { quantity: dto.quantity },
     });
+
+    return this.getCart(userId);
   }
 
   async removeItem(userId: string, productId: string) {
@@ -105,9 +109,11 @@ export class CartService {
       throw new NotFoundException();
     }
 
-    return this.prisma.cartItem.delete({
+    await this.prisma.cartItem.delete({
       where: { id: existingItem.id },
     });
+
+    return this.getCart(userId);
   }
 
   async clearCart(userId: string) {

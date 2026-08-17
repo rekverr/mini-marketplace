@@ -15,6 +15,15 @@ export interface Product {
   category?: Category;
 }
 
+export interface ProductWritePayload {
+  name: string;
+  description?: string;
+  price: number;
+  categoryId: string;
+  stockQuantity: number;
+  imageUrl?: string;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;

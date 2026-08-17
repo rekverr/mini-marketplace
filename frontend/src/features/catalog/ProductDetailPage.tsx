@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { catalogService } from "../../api/catalog.service";
 import type { Product } from "../../entities/product/product.types";
 import { Button } from "../../components/ui/Button";
 import { LoadingState, ErrorState } from "../../components/ui/FeedbackStates";
+import type { AppDispatch } from "../../app/store";
+import { addToCart } from "../cart/cart.slice";
 
 export const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const dispatch = useDispatch<AppDispatch>();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -77,7 +81,9 @@ export const ProductDetailPage = () => {
                 <Button
                   variant="primary"
                   className="w-48"
-                  onClick={() => console.log("Add", product.id)}
+                  onClick={() =>
+                    dispatch(addToCart({ productId: product.id, quantity: 1 }))
+                  }
                 >
                   Add to Cart
                 </Button>

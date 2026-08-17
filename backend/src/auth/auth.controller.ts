@@ -1,4 +1,5 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -8,23 +9,18 @@ import { CreateUserDto } from '../user/dto/create-user.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
-  register(@Body() createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto);
-  }
+  register(@Body() dto: CreateUserDto) { return this.authService.register(dto); }
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
-  }
+  login(@Body() dto: LoginDto) { return this.authService.login(dto); }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('refresh')
-  refresh(@Body() refreshDto: RefreshDto) {
-    return this.authService.refreshTokens(refreshDto.refreshToken);
-  }
+  refresh(@Body() dto: RefreshDto) { return this.authService.refreshTokens(dto.refreshToken); }
 
   @Post('logout')
-  logout(@Body() refreshDto: RefreshDto) {
-    return this.authService.logout(refreshDto.refreshToken);
-  }
+  logout(@Body() dto: RefreshDto) { return this.authService.logout(dto.refreshToken); }
 }
