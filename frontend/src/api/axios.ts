@@ -2,8 +2,17 @@ import axios from "axios";
 import { store } from "../app/store";
 import { logout, setCredentials } from "../features/auth/auth.slice";
 
+const baseURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+export const publicApi = axios.create({
+  baseURL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -29,10 +38,9 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) throw new Error("No refresh token");
 
-        const response = await axios.post(
-          `${api.defaults.baseURL}/auth/refresh`,
-          { refreshToken },
-        );
+        const response = await publicApi.post("/auth/refresh", {
+          refreshToken,
+        });
 
         const { accessToken, user, refreshToken: newRefresh } = response.data;
 

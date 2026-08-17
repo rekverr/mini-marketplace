@@ -6,14 +6,11 @@ import { UserModule } from '../user/user.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
+const accessSecret = process.env.JWT_ACCESS_SECRET;
+if (!accessSecret) throw new Error('JWT_ACCESS_SECRET must be configured');
+
 @Module({
-  imports: [
-    UserModule,
-    JwtModule.register({
-      global: true,
-      secret: process.env.JWT_SECRET || 'super-secret-key-change-in-production',
-    }),
-  ],
+  imports: [UserModule, JwtModule.register({ global: true, secret: accessSecret })],
   controllers: [AuthController],
   providers: [AuthService, PrismaService, JwtStrategy],
   exports: [AuthService],

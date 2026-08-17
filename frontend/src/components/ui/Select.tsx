@@ -18,7 +18,7 @@ export const Select: React.FC<SelectProps> = ({
 }) => {
   return (
     <select
-      className={`block w-full rounded-md border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 ${
+      className={`block w-full cursor-pointer rounded-md border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 ${
         hasError
           ? "border-red-500 focus:border-red-500 focus:ring-red-500"
           : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"

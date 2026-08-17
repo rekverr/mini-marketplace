@@ -14,6 +14,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -50,7 +51,7 @@ import { APP_GUARD } from '@nestjs/core';
     OrderModule,
     AnalyticsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     AppService,
     {

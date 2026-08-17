@@ -4,6 +4,9 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
+  for (const name of ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET']) {
+    if (!process.env[name]) throw new Error(`${name} must be configured`);
+  }
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 

@@ -27,7 +27,7 @@ export class AuthService {
     const user = await this.userService.findByEmail(loginDto.email);
 
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -36,10 +36,19 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    return this.generateTokens(user.id, user.role);
+    const tokens = await this.generateTokens(user.id, user.role);
+
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    };
   }
 
   async refreshTokens(refreshToken: string) {
@@ -61,11 +70,25 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    await this.prisma.refreshToken.delete({
-      where: { id: tokenRecord.id },
+    const revoked = await this.prisma.refreshToken.updateMany({
+      where: { id: tokenRecord.id, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
+    if (revoked.count !== 1) throw new UnauthorizedException();
 
-    return this.generateTokens(tokenRecord.user.id, tokenRecord.user.role);
+    const tokens = await this.generateTokens(
+      tokenRecord.user.id,
+      tokenRecord.user.role,
+    );
+
+    return {
+      ...tokens,
+      user: {
+        id: tokenRecord.user.id,
+        email: tokenRecord.user.email,
+        role: tokenRecord.user.role,
+      },
+    };
   }
 
   async logout(refreshToken: string) {
@@ -80,10 +103,35 @@ export class AuthService {
     });
   }
 
+  private parseDuration(value: string | undefined, fallbackMs: number) {
+    const match = /^(\d+)([dhms])$/.exec(value || '');
+    if (!match) return fallbackMs;
+    const amount = Number(match[1]);
+    const multiplier =
+      match[2] === 'd'
+        ? 86400000
+        : match[2] === 'h'
+          ? 3600000
+          : match[2] === 'm'
+            ? 60000
+            : 1000;
+    return amount * multiplier;
+  }
+
   private async generateTokens(userId: string, role: string) {
     const payload = { sub: userId, role };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const accessSecret = process.env.JWT_ACCESS_SECRET;
+    if (!accessSecret) throw new Error('JWT_ACCESS_SECRET must be configured');
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: accessSecret,
+      expiresIn: Math.floor(
+        this.parseDuration(process.env.JWT_ACCESS_EXPIRES_IN, 15 * 60 * 1000) / 1000,
+      ),
+      issuer: process.env.JWT_ISSUER || 'mini-marketplace',
+      audience: process.env.JWT_AUDIENCE || 'mini-marketplace-api',
+    });
     const refreshToken = crypto.randomBytes(40).toString('hex');
     const tokenHash = crypto
       .createHash('sha256')
@@ -91,7 +139,7 @@ export class AuthService {
       .digest('hex');
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setTime(expiresAt.getTime() + this.parseDuration(process.env.JWT_REFRESH_EXPIRES_IN, 7 * 24 * 60 * 60 * 1000));
 
     await this.prisma.refreshToken.create({
       data: {
