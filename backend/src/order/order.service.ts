@@ -46,7 +46,7 @@ export class OrderService implements OnModuleInit {
         'process-order',
         { orderId },
         {
-          jobId: `order:${orderId}`,
+          jobId: `order-${orderId}`,
           attempts: 5,
           backoff: { type: 'exponential', delay: 1000 },
           removeOnComplete: 1000,
