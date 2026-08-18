@@ -50,7 +50,24 @@ export const AdminProductsPage = () => {
   };
 
   useEffect(() => {
-    void loadData();
+    Promise.all([
+      catalogService.getProducts({ page: 1, limit: 100 }),
+      catalogService.getCategories(),
+    ])
+      .then(([productsResponse, categoryResponse]) => {
+        setProducts(productsResponse.data);
+        setCategories(categoryResponse);
+        setForm((current) => ({
+          ...current,
+          categoryId: current.categoryId || categoryResponse[0]?.id || "",
+        }));
+      })
+      .catch((err) => {
+        setError(getApiErrorMessage(err, "Failed to load products"));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   const resetForm = () => {

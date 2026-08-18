@@ -23,10 +23,14 @@ export const AdminDashboardPage = () => {
   };
 
   useEffect(() => {
-    setLoading(true);
-    setError("");
+    const fromDate = new Date(`${from}T00:00:00`).toISOString();
+    const toDate = new Date(`${to}T23:59:59.999`).toISOString();
+
     orderService
-      .getAnalyticsSummary(range)
+      .getAnalyticsSummary({
+        from: fromDate,
+        to: toDate,
+      })
       .then(setSummary)
       .catch((err) =>
         setError(getApiErrorMessage(err, "Failed to load analytics")),
@@ -38,9 +42,11 @@ export const AdminDashboardPage = () => {
     const blob = await orderService.downloadSalesCsv(range);
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
+
     anchor.href = url;
     anchor.download = "sales-export.csv";
     anchor.click();
+
     URL.revokeObjectURL(url);
   };
 
@@ -50,6 +56,7 @@ export const AdminDashboardPage = () => {
   const salesEntries = Object.entries(summary?.salesByDate ?? {}).sort(
     ([a], [b]) => a.localeCompare(b),
   );
+
   const maxDailyRevenue = Math.max(
     1,
     ...salesEntries.map(([, revenue]) => revenue),
@@ -66,6 +73,7 @@ export const AdminDashboardPage = () => {
             Revenue excludes cancelled orders.
           </p>
         </div>
+
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-sm text-gray-600">
             From{" "}
@@ -76,6 +84,7 @@ export const AdminDashboardPage = () => {
               onChange={(e) => setFrom(e.target.value)}
             />
           </label>
+
           <label className="text-sm text-gray-600">
             To{" "}
             <input
@@ -85,11 +94,13 @@ export const AdminDashboardPage = () => {
               onChange={(e) => setTo(e.target.value)}
             />
           </label>
+
           <Button variant="secondary" onClick={handleExport}>
             Export CSV
           </Button>
         </div>
       </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           className="rounded-lg border border-gray-200 bg-white p-4"
@@ -98,6 +109,7 @@ export const AdminDashboardPage = () => {
           <p className="text-sm text-gray-500">Products</p>
           <p className="mt-2 text-xl font-semibold text-gray-950">Manage</p>
         </Link>
+
         <Link
           className="rounded-lg border border-gray-200 bg-white p-4"
           to="/admin/categories"
@@ -105,6 +117,7 @@ export const AdminDashboardPage = () => {
           <p className="text-sm text-gray-500">Categories</p>
           <p className="mt-2 text-xl font-semibold text-gray-950">Manage</p>
         </Link>
+
         <Link
           className="rounded-lg border border-gray-200 bg-white p-4"
           to="/admin/orders"
@@ -114,6 +127,7 @@ export const AdminDashboardPage = () => {
             {summary?.totalOrders ?? 0}
           </p>
         </Link>
+
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <p className="text-sm text-gray-500">Revenue</p>
           <p className="mt-2 text-xl font-semibold text-gray-950">
@@ -121,9 +135,11 @@ export const AdminDashboardPage = () => {
           </p>
         </div>
       </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <h2 className="font-semibold text-gray-950">Daily sales</h2>
+
           <div className="mt-4 space-y-3">
             {salesEntries.length === 0 ? (
               <p className="text-sm text-gray-500">No sales in period.</p>
@@ -134,14 +150,19 @@ export const AdminDashboardPage = () => {
                   className="grid grid-cols-[6rem_1fr_5rem] items-center gap-3 text-sm"
                 >
                   <span className="text-gray-500">{date.slice(5)}</span>
+
                   <div className="h-2 rounded bg-gray-100">
                     <div
                       className="h-2 rounded bg-emerald-500"
                       style={{
-                        width: `${Math.max(6, (revenue / maxDailyRevenue) * 100)}%`,
+                        width: `${Math.max(
+                          6,
+                          (revenue / maxDailyRevenue) * 100,
+                        )}%`,
                       }}
                     />
                   </div>
+
                   <span className="text-right font-medium text-gray-900">
                     ${revenue.toFixed(0)}
                   </span>
@@ -150,8 +171,10 @@ export const AdminDashboardPage = () => {
             )}
           </div>
         </div>
+
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <h2 className="font-semibold text-gray-950">Top products</h2>
+
           <div className="mt-4 divide-y divide-gray-100">
             {(summary?.topProducts ?? []).map((product) => (
               <div
@@ -159,11 +182,13 @@ export const AdminDashboardPage = () => {
                 className="flex justify-between gap-4 py-3 text-sm"
               >
                 <span className="text-gray-700">{product.name}</span>
+
                 <span className="font-medium text-gray-950">
                   {product.quantity} units, ${product.revenue.toFixed(2)}
                 </span>
               </div>
             ))}
+
             {(summary?.topProducts ?? []).length === 0 && (
               <p className="text-sm text-gray-500">No product sales yet.</p>
             )}

@@ -21,8 +21,7 @@ export const AdminOrdersPage = () => {
   const [error, setError] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  const loadOrders = () => {
-    setLoading(true);
+  useEffect(() => {
     orderService
       .getAllOrders()
       .then(setOrders)
@@ -30,9 +29,17 @@ export const AdminOrdersPage = () => {
         setError(getApiErrorMessage(err, "Failed to load orders")),
       )
       .finally(() => setLoading(false));
-  };
+  }, []);
 
-  useEffect(loadOrders, []);
+  useEffect(() => {
+    orderService
+      .getAllOrders()
+      .then(setOrders)
+      .catch((err) =>
+        setError(getApiErrorMessage(err, "Failed to load orders")),
+      )
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     setSavingId(orderId);

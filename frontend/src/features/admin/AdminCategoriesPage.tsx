@@ -25,7 +25,15 @@ export const AdminCategoriesPage = () => {
       .finally(() => setLoading(false));
   };
 
-  useEffect(loadCategories, []);
+  useEffect(() => {
+    catalogService
+      .getCategories()
+      .then(setCategories)
+      .catch((err) =>
+        setError(getApiErrorMessage(err, "Failed to load categories")),
+      )
+      .finally(() => setLoading(false));
+  }, []);
 
   const resetForm = () => {
     setName("");
