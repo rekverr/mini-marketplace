@@ -26,7 +26,9 @@ export const AdminOrdersPage = () => {
     orderService
       .getAllOrders()
       .then(setOrders)
-      .catch((err) => setError(getApiErrorMessage(err, "Failed to load orders")))
+      .catch((err) =>
+        setError(getApiErrorMessage(err, "Failed to load orders")),
+      )
       .finally(() => setLoading(false));
   };
 
@@ -36,7 +38,10 @@ export const AdminOrdersPage = () => {
     setSavingId(orderId);
     setError("");
     try {
-      const updatedOrder = await orderService.updateOrderStatus(orderId, status);
+      const updatedOrder = await orderService.updateOrderStatus(
+        orderId,
+        status,
+      );
       setOrders((current) =>
         current.map((order) =>
           order.id === updatedOrder.id ? { ...order, ...updatedOrder } : order,
@@ -84,7 +89,9 @@ export const AdminOrdersPage = () => {
                 </td>
                 <td className="px-4 py-3 text-gray-700">
                   {order.orderItems
-                    .map((item) => `${item.productNameSnapshot} x${item.quantity}`)
+                    .map(
+                      (item) => `${item.productNameSnapshot} x${item.quantity}`,
+                    )
                     .join(", ")}
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-950">

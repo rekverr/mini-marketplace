@@ -61,7 +61,10 @@ function App() {
                 Mini Market
               </Link>
               <nav className="flex space-x-4">
-                <Link to="/" className="cursor-pointer text-gray-600 transition hover:text-gray-900">
+                <Link
+                  to="/"
+                  className="cursor-pointer text-gray-600 transition hover:text-gray-900"
+                >
                   Catalog
                 </Link>
                 {user?.role === "ADMIN" && (
@@ -94,7 +97,10 @@ function App() {
                   </span>
                 )}
               </Link>
-              <Link to="/orders" className="cursor-pointer text-gray-600 transition hover:text-gray-900">
+              <Link
+                to="/orders"
+                className="cursor-pointer text-gray-600 transition hover:text-gray-900"
+              >
                 Orders
               </Link>
               <button
