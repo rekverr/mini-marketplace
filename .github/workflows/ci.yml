@@ -57,6 +57,9 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Run Prisma migrations
+        run: npx prisma migrate deploy
+
       - name: Lint
         run: npm run lint
 
@@ -64,7 +67,7 @@ jobs:
         run: npm test
 
       - name: E2E Tests
-        run: npm run test:e2e -- --detectOpenHandles
+        run: npm run test:e2e
 
       - name: Build
         run: npm run build
