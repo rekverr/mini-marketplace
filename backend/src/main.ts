@@ -6,7 +6,11 @@ import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
-  for (const name of ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET']) {
+  for (const name of [
+    'DATABASE_URL',
+    'JWT_ACCESS_SECRET',
+    'JWT_REFRESH_SECRET',
+  ]) {
     if (!process.env[name]) throw new Error(`${name} must be configured`);
   }
   const app = await NestFactory.create(AppModule);
