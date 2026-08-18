@@ -108,7 +108,7 @@ describe('OrderService', () => {
       'process-order',
       { orderId: 'order-1' },
       expect.objectContaining({
-        jobId: 'order:order-1',
+        jobId: 'order-order-1',
         attempts: 5,
       }),
     );
