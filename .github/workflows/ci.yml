@@ -67,7 +67,7 @@ jobs:
         run: npm test
 
       - name: E2E Tests
-        run: npm run test:e2e
+        run: npm run test:e2e -- --detectOpenHandles
 
       - name: Build
         run: npm run build
