@@ -127,7 +127,8 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload, {
       secret: accessSecret,
       expiresIn: Math.floor(
-        this.parseDuration(process.env.JWT_ACCESS_EXPIRES_IN, 15 * 60 * 1000) / 1000,
+        this.parseDuration(process.env.JWT_ACCESS_EXPIRES_IN, 15 * 60 * 1000) /
+          1000,
       ),
       issuer: process.env.JWT_ISSUER || 'mini-marketplace',
       audience: process.env.JWT_AUDIENCE || 'mini-marketplace-api',
@@ -139,7 +140,13 @@ export class AuthService {
       .digest('hex');
 
     const expiresAt = new Date();
-    expiresAt.setTime(expiresAt.getTime() + this.parseDuration(process.env.JWT_REFRESH_EXPIRES_IN, 7 * 24 * 60 * 60 * 1000));
+    expiresAt.setTime(
+      expiresAt.getTime() +
+        this.parseDuration(
+          process.env.JWT_REFRESH_EXPIRES_IN,
+          7 * 24 * 60 * 60 * 1000,
+        ),
+    );
 
     await this.prisma.refreshToken.create({
       data: {

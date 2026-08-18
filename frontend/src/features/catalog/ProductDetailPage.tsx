@@ -21,7 +21,7 @@ export const ProductDetailPage = () => {
       try {
         const data = await catalogService.getProductById(id);
         setProduct(data);
-      } catch (err) {
+      } catch {
         setError("Product not found");
       } finally {
         setLoading(false);

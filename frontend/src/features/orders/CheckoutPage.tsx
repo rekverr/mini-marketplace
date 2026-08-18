@@ -54,8 +54,8 @@ export const CheckoutPage = () => {
       <div>
         <h1 className="text-2xl font-semibold text-gray-950">Checkout</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Payment is simulated for this assignment. The backend revalidates prices and
-          stock before creating the order.
+          Payment is simulated for this assignment. The backend revalidates
+          prices and stock before creating the order.
         </p>
       </div>
 
@@ -77,10 +77,7 @@ export const CheckoutPage = () => {
                 </p>
               </div>
               <p className="font-semibold text-gray-950">
-                $
-                {(
-                  Number(item.product?.price ?? 0) * item.quantity
-                ).toFixed(2)}
+                ${(Number(item.product?.price ?? 0) * item.quantity).toFixed(2)}
               </p>
             </div>
           ))}

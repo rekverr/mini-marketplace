@@ -35,7 +35,10 @@ export const CatalogPage = () => {
   });
 
   useEffect(() => {
-    catalogService.getCategories().then(setCategories).catch(() => {});
+    catalogService
+      .getCategories()
+      .then(setCategories)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -166,7 +169,9 @@ export const CatalogPage = () => {
                   onChange={(event) =>
                     handleParamChange(
                       "minPrice",
-                      event.target.value ? Number(event.target.value) : undefined,
+                      event.target.value
+                        ? Number(event.target.value)
+                        : undefined,
                     )
                   }
                 />
@@ -178,7 +183,9 @@ export const CatalogPage = () => {
                   onChange={(event) =>
                     handleParamChange(
                       "maxPrice",
-                      event.target.value ? Number(event.target.value) : undefined,
+                      event.target.value
+                        ? Number(event.target.value)
+                        : undefined,
                     )
                   }
                 />
@@ -212,7 +219,11 @@ export const CatalogPage = () => {
                 ? `Showing ${firstItem}-${lastItem} of ${total}`
                 : "No products"}
             </span>
-            {totalPages > 1 && <span>Page {params.page} of {totalPages}</span>}
+            {totalPages > 1 && (
+              <span>
+                Page {params.page} of {totalPages}
+              </span>
+            )}
           </div>
 
           {loading ? (

@@ -8,17 +8,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { GetProductsDto, SortBy, SortOrder } from './dto/get-products.dto';
 
-type RedisCacheClient = {
-  keys(pattern: string): Promise<string[]>;
-  del(...keys: string[]): Promise<number>;
-};
-
-type CacheWithRedisClient = Cache & {
-  store?: { client?: RedisCacheClient };
-  stores?: Array<{ client?: RedisCacheClient }>;
-  client?: RedisCacheClient;
-};
-
 @Injectable()
 export class ProductService {
   private readonly logger = new Logger(ProductService.name);
@@ -39,11 +28,17 @@ export class ProductService {
   }
 
   async findAll(query: GetProductsDto) {
-    const queryHash = createHash('sha256').update(JSON.stringify(query)).digest('hex');
+    const queryHash = createHash('sha256')
+      .update(JSON.stringify(query))
+      .digest('hex');
     const cacheKey = `products:list:${queryHash}`;
 
     let cachedData: unknown;
-    try { cachedData = await this.cacheManager.get(cacheKey); } catch { this.logger.warn(`CATALOG_CACHE_READ_FAILED key=${cacheKey}`); }
+    try {
+      cachedData = await this.cacheManager.get(cacheKey);
+    } catch {
+      this.logger.warn(`CATALOG_CACHE_READ_FAILED key=${cacheKey}`);
+    }
     if (cachedData) return cachedData;
 
     const {
@@ -99,7 +94,11 @@ export class ProductService {
       },
     };
 
-    try { await this.cacheManager.set(cacheKey, result); } catch { this.logger.warn(`CATALOG_CACHE_WRITE_FAILED key=${cacheKey}`); }
+    try {
+      await this.cacheManager.set(cacheKey, result);
+    } catch {
+      this.logger.warn(`CATALOG_CACHE_WRITE_FAILED key=${cacheKey}`);
+    }
 
     return result;
   }
@@ -107,7 +106,11 @@ export class ProductService {
   async findOne(id: string) {
     const cacheKey = `products:item:${id}`;
     let cachedData: unknown;
-    try { cachedData = await this.cacheManager.get(cacheKey); } catch { this.logger.warn(`CATALOG_CACHE_READ_FAILED key=${cacheKey}`); }
+    try {
+      cachedData = await this.cacheManager.get(cacheKey);
+    } catch {
+      this.logger.warn(`CATALOG_CACHE_READ_FAILED key=${cacheKey}`);
+    }
     if (cachedData) return cachedData;
 
     const product = await this.prisma.product.findUnique({
@@ -119,7 +122,11 @@ export class ProductService {
       throw new NotFoundException();
     }
 
-    try { await this.cacheManager.set(cacheKey, product); } catch { this.logger.warn(`CATALOG_CACHE_WRITE_FAILED key=${cacheKey}`); }
+    try {
+      await this.cacheManager.set(cacheKey, product);
+    } catch {
+      this.logger.warn(`CATALOG_CACHE_WRITE_FAILED key=${cacheKey}`);
+    }
 
     return product;
   }
@@ -152,7 +159,9 @@ export class ProductService {
       // enumeration, which differs between cache-manager store versions.
       await this.cacheManager.clear();
     } catch {
-      this.logger.warn(`CATALOG_CACHE_INVALIDATION_FAILED productId=${productId ?? 'all'}`);
+      this.logger.warn(
+        `CATALOG_CACHE_INVALIDATION_FAILED productId=${productId ?? 'all'}`,
+      );
     }
   }
 }

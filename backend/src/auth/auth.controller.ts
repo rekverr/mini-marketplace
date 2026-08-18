@@ -11,16 +11,24 @@ export class AuthController {
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
-  register(@Body() dto: CreateUserDto) { return this.authService.register(dto); }
+  register(@Body() dto: CreateUserDto) {
+    return this.authService.register(dto);
+  }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
-  login(@Body() dto: LoginDto) { return this.authService.login(dto); }
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('refresh')
-  refresh(@Body() dto: RefreshDto) { return this.authService.refreshTokens(dto.refreshToken); }
+  refresh(@Body() dto: RefreshDto) {
+    return this.authService.refreshTokens(dto.refreshToken);
+  }
 
   @Post('logout')
-  logout(@Body() dto: RefreshDto) { return this.authService.logout(dto.refreshToken); }
+  logout(@Body() dto: RefreshDto) {
+    return this.authService.logout(dto.refreshToken);
+  }
 }

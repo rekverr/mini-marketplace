@@ -50,7 +50,24 @@ export const AdminProductsPage = () => {
   };
 
   useEffect(() => {
-    void loadData();
+    Promise.all([
+      catalogService.getProducts({ page: 1, limit: 100 }),
+      catalogService.getCategories(),
+    ])
+      .then(([productsResponse, categoryResponse]) => {
+        setProducts(productsResponse.data);
+        setCategories(categoryResponse);
+        setForm((current) => ({
+          ...current,
+          categoryId: current.categoryId || categoryResponse[0]?.id || "",
+        }));
+      })
+      .catch((err) => {
+        setError(getApiErrorMessage(err, "Failed to load products"));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   const resetForm = () => {
@@ -114,7 +131,9 @@ export const AdminProductsPage = () => {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-950">Products</h1>
-        <p className="mt-1 text-sm text-gray-500">Create and manage catalog products, prices, inventory and images.</p>
+        <p className="mt-1 text-sm text-gray-500">
+          Create and manage catalog products, prices, inventory and images.
+        </p>
       </div>
       {error && <ErrorState message={error} />}
 
@@ -123,78 +142,94 @@ export const AdminProductsPage = () => {
         onSubmit={handleSubmit}
       >
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Product name</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            Product name
+          </label>
           <Input
-          required
-          placeholder="e.g. Wireless headphones"
-          value={form.name}
-          onChange={(event) => setForm({ ...form, name: event.target.value })}
+            required
+            placeholder="e.g. Wireless headphones"
+            value={form.name}
+            onChange={(event) => setForm({ ...form, name: event.target.value })}
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Category</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            Category
+          </label>
           <Select
-          required
-          options={categories.map((category) => ({
-            value: category.id,
-            label: category.name,
-          }))}
-          value={form.categoryId}
-          onChange={(event) =>
-            setForm({ ...form, categoryId: event.target.value })
-          }
+            required
+            options={categories.map((category) => ({
+              value: category.id,
+              label: category.name,
+            }))}
+            value={form.categoryId}
+            onChange={(event) =>
+              setForm({ ...form, categoryId: event.target.value })
+            }
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Price (USD)</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            Price (USD)
+          </label>
           <Input
-          min={0}
-          required
-          step="0.01"
-          type="number"
-          placeholder="Price"
-          value={form.price}
-          onChange={(event) =>
-            setForm({ ...form, price: Number(event.target.value) })
-          }
+            min={0}
+            required
+            step="0.01"
+            type="number"
+            placeholder="Price"
+            value={form.price}
+            onChange={(event) =>
+              setForm({ ...form, price: Number(event.target.value) })
+            }
           />
-          <p className="mt-1 text-xs text-gray-500">Customer-facing price before checkout.</p>
+          <p className="mt-1 text-xs text-gray-500">
+            Customer-facing price before checkout.
+          </p>
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Stock quantity</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            Stock quantity
+          </label>
           <Input
-          min={0}
-          required
-          type="number"
-          placeholder="Stock"
-          value={form.stockQuantity}
-          onChange={(event) =>
-            setForm({ ...form, stockQuantity: Number(event.target.value) })
-          }
+            min={0}
+            required
+            type="number"
+            placeholder="Stock"
+            value={form.stockQuantity}
+            onChange={(event) =>
+              setForm({ ...form, stockQuantity: Number(event.target.value) })
+            }
           />
-          <p className="mt-1 text-xs text-gray-500">How many units are currently available.</p>
+          <p className="mt-1 text-xs text-gray-500">
+            How many units are currently available.
+          </p>
         </div>
         <div className="md:col-span-2">
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Image URL</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            Image URL
+          </label>
           <Input
-          className="w-full"
-          placeholder="Image URL"
-          type="url"
-          value={form.imageUrl}
-          onChange={(event) =>
-            setForm({ ...form, imageUrl: event.target.value })
-          }
+            className="w-full"
+            placeholder="Image URL"
+            type="url"
+            value={form.imageUrl}
+            onChange={(event) =>
+              setForm({ ...form, imageUrl: event.target.value })
+            }
           />
         </div>
         <div className="md:col-span-2">
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Description</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            Description
+          </label>
           <textarea
-          className="block min-h-24 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 md:col-span-2"
-          placeholder="Description"
-          value={form.description}
-          onChange={(event) =>
-            setForm({ ...form, description: event.target.value })
-          }
+            className="block min-h-24 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 md:col-span-2"
+            placeholder="Description"
+            value={form.description}
+            onChange={(event) =>
+              setForm({ ...form, description: event.target.value })
+            }
           />
         </div>
         <div className="flex gap-2 md:col-span-2">

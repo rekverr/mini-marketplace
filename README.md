@@ -3,9 +3,11 @@
 Production-minded marketplace built with NestJS, React, PostgreSQL, Prisma, Redis and BullMQ.
 
 ## Scope
+
 Customers can register/login, browse a cached catalog, manage a cart and checkout. Checkout uses transactional inventory reservation and an idempotency key. Orders are processed asynchronously. Admins manage products/categories/orders and can view date-range analytics and export CSV sales.
 
 ## Stack
+
 - NestJS + TypeScript
 - React + TypeScript + Redux Toolkit
 - PostgreSQL + Prisma
@@ -18,6 +20,7 @@ Customers can register/login, browse a cached catalog, manage a cart and checkou
 PostgreSQL is preferred because checkout needs ACID transactions, inventory is relational, and analytics/reporting are natural SQL workloads.
 
 ## Run locally
+
 Copy `.env.example` to `.env`, replace the secrets, then:
 
 ```bash
@@ -58,12 +61,15 @@ The affected-row count must be one. All inventory changes, order creation, order
 Committed `NEW` orders are re-enqueued during startup. BullMQ jobs have deterministic IDs, retry/backoff settings, and the processor resumes from the current order state, making retries safe.
 
 ## Cache
+
 Catalog list keys are SHA-256 hashes of the normalized query object and detail keys are `products:item:<id>`. Product/category mutations invalidate relevant keys. Cache failures are logged and do not turn a catalog read into corrupted business data.
 
 ## Security
+
 Access JWTs use `JWT_ACCESS_SECRET` and short expiry. Refresh tokens are random opaque values and only hashes are stored. Refresh sessions are rotated/revocable. Admin APIs enforce backend role guards. Authentication endpoints are rate-limited. Secrets must come from environment variables.
 
 ## Analytics
+
 `GET /admin/analytics/summary`, `/daily`, `/top-products`, and CSV export accept optional ISO `from` and `to` parameters. Cancelled orders are excluded from sales. Money aggregation stays in Prisma Decimal arithmetic until serialization. CSV values are quoted/escaped safely.
 
 ## Quality gates
@@ -81,5 +87,13 @@ npm run build
 
 CI runs these checks on push and pull request with PostgreSQL and Redis service containers.
 
-## Known trade-offs
-The queue/DB boundary uses committed order state plus startup recovery rather than a full transactional outbox. Product images use URLs rather than object storage. Storybook dependencies are not vendored into the repository archive; the existing UI components remain separated so Storybook can be added without changing domain code.
+## What Could Be Improved
+
+Due to project scope and time constraints, the following could be improved:
+
+More comprehensive unit and E2E test coverage.
+More detailed Swagger documentation and API examples.
+More advanced frontend loading and error states.
+Production monitoring and centralized logging.
+More complete CI/CD with automatic deployment.
+More robust payment integration and webhook handling.

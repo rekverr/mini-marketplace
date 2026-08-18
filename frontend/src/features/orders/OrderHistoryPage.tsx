@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { orderService } from "../../api/order.service";
 import type { Order } from "../../entities/order/order.types";
-import { ErrorState, LoadingState, EmptyState } from "../../components/ui/FeedbackStates";
+import {
+  ErrorState,
+  LoadingState,
+  EmptyState,
+} from "../../components/ui/FeedbackStates";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { getApiErrorMessage } from "../../lib/api-error";
 
@@ -14,7 +18,9 @@ export const OrderHistoryPage = () => {
     orderService
       .getMyOrders()
       .then(setOrders)
-      .catch((err) => setError(getApiErrorMessage(err, "Failed to load orders")))
+      .catch((err) =>
+        setError(getApiErrorMessage(err, "Failed to load orders")),
+      )
       .finally(() => setLoading(false));
   }, []);
 
