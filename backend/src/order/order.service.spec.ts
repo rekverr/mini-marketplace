@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import { ConflictException } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { OrderService } from './order.service';
@@ -16,6 +15,8 @@ function createService(overrides: Record<string, unknown> = {}) {
       updateMany: jest.fn(),
     },
     order: {
+      findUnique: jest.fn(),
+      updateMany: jest.fn(),
       create: jest.fn().mockResolvedValue({
         id: 'order-1',
         status: OrderStatus.NEW,
@@ -246,20 +247,24 @@ describe('OrderService', () => {
   });
 
   it('rejects arbitrary order status jumps and treats same-state retries as idempotent', async () => {
-    const { service, prisma, cache } = createService();
+    const { service, tx, cache } = createService();
 
-    prisma.order.findUnique.mockResolvedValue({
+    tx.order.findUnique.mockResolvedValue({
       id: 'order-1',
       status: OrderStatus.NEW,
+      orderItems: [],
     });
+
+    tx.order.updateMany.mockResolvedValue({ count: 1 });
 
     await expect(
       service.updateOrderStatus('order-1', OrderStatus.COMPLETED),
     ).rejects.toBeInstanceOf(ConflictException);
 
-    prisma.order.findUnique.mockResolvedValue({
+    tx.order.findUnique.mockResolvedValue({
       id: 'order-1',
       status: OrderStatus.PROCESSING,
+      orderItems: [],
     });
 
     await expect(
@@ -270,9 +275,7 @@ describe('OrderService', () => {
       }),
     );
 
-    expect(prisma.order.update).not.toHaveBeenCalled();
-
-    // no status change -> no cache invalidation
+    expect(tx.order.updateMany).not.toHaveBeenCalled();
     expect(cache.clear).not.toHaveBeenCalled();
   });
 });

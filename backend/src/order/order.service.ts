@@ -171,13 +171,18 @@ export class OrderService implements OnModuleInit {
   }
 
   async updateOrderStatus(id: string, status: OrderStatus) {
+    let statusChanged = false;
+
     const updated = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id },
         include: { orderItems: true },
       });
+
       if (!order) throw new NotFoundException();
+
       if (order.status === status) return order;
+
       if (!this.statusTransitions[order.status].includes(status)) {
         throw new ConflictException(
           `Invalid order status transition: ${order.status} -> ${status}`,
@@ -188,11 +193,14 @@ export class OrderService implements OnModuleInit {
         where: { id, status: order.status },
         data: { status },
       });
+
       if (statusUpdate.count !== 1) {
         throw new ConflictException(
           'Order status was changed by another request',
         );
       }
+
+      statusChanged = true;
 
       if (status === OrderStatus.CANCELLED) {
         for (const item of order.orderItems) {
@@ -206,13 +214,16 @@ export class OrderService implements OnModuleInit {
       return { ...order, status };
     });
 
-    try {
-      await this.cacheManager.clear();
-    } catch {
-      this.logger.warn(`CATALOG_CACHE_INVALIDATION_FAILED orderId=${id}`);
+    if (statusChanged) {
+      try {
+        await this.cacheManager.clear();
+      } catch {
+        this.logger.warn(`CATALOG_CACHE_INVALIDATION_FAILED orderId=${id}`);
+      }
     }
 
     this.logger.log(`ORDER_STATUS_CHANGED orderId=${id} to=${status}`);
+
     return updated;
   }
 }
