@@ -8,17 +8,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { GetProductsDto, SortBy, SortOrder } from './dto/get-products.dto';
 
-type RedisCacheClient = {
-  keys(pattern: string): Promise<string[]>;
-  del(...keys: string[]): Promise<number>;
-};
-
-type CacheWithRedisClient = Cache & {
-  store?: { client?: RedisCacheClient };
-  stores?: Array<{ client?: RedisCacheClient }>;
-  client?: RedisCacheClient;
-};
-
 @Injectable()
 export class ProductService {
   private readonly logger = new Logger(ProductService.name);
